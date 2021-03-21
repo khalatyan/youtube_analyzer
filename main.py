@@ -37,11 +37,12 @@ def get_videos_from_playlist(id, name, i):
 
     for item in items:
         list = get_information_to_video(item["snippet"]["resourceId"]["videoId"])
-        list["title"] = item["snippet"]["title"]
-        list["publishedAt"] = item["snippet"]["publishedAt"]
-        list["playlist_anme"] = playlist_list[i]["title"]
+        if (list):
+            list["title"] = item["snippet"]["title"]
+            list["publishedAt"] = item["snippet"]["publishedAt"]
+            list["playlist_anme"] = playlist_list[i]["title"]
 
-        data.append(list)
+            data.append(list)
 
 
 def get_information_to_video(id):
