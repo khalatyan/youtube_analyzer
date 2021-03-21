@@ -3,12 +3,30 @@ import requests
 import csv
 
 import pandas as pd
+import re
 
 from local_file import *
 
 playlist_list = []
 data = []
 
+
+def get_seconds_by_str(string: str):
+    my_str = 'PT'
+    if ("H" in string):
+        my_str += '(\d+)H'
+    if ("M" in string):
+        my_str += '(\d+)M'
+    if ("S" in string):
+        my_str += '(\d+)S'
+
+    H = re.findall(my_str,string)[0]
+
+    total_secs = 0
+    for i in range(len(H) - 1):
+        total_secs += int(H[i]) * 60
+    total_secs += int(H[-1])
+    return total_secs
 
 def get_playlist_from_chanel():
     API_URL = 'https://www.googleapis.com/youtube/v3/playlists?part=snippet' + '&channelId=UCSaVoRErW4kqKsDqExs2MXA' + '&maxResults=500' + '&key=' + API_KEY
@@ -46,13 +64,14 @@ def get_videos_from_playlist(id, name, i):
 
 
 def get_information_to_video(id):
-    API_URL = 'https://www.googleapis.com/youtube/v3/videos?part=statistics' + '&id=' + id + '&key=' + API_KEY
+    API_URL = 'https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails' + '&id=' + id + '&key=' + API_KEY
     response = requests.get(API_URL)
 
     json_response = response.json()
     if (json_response["items"]):
         item = json_response["items"][0]
         statistics = item["statistics"]
+        duration = get_seconds_by_str(item["contentDetails"]["duration"])
 
         try:
             list = {
@@ -60,7 +79,8 @@ def get_information_to_video(id):
                 "likeCount": statistics["likeCount"],
                 "dislikeCount": statistics["dislikeCount"],
                 "favoriteCount": statistics["favoriteCount"],
-                "commentCount": statistics["commentCount"]
+                "commentCount": statistics["commentCount"],
+                "duration": duration
             }
         except Exception:
             list = {
@@ -68,7 +88,8 @@ def get_information_to_video(id):
                 "likeCount": statistics["likeCount"],
                 "dislikeCount": statistics["dislikeCount"],
                 "favoriteCount": statistics["favoriteCount"],
-                "commentCount": statistics["commentCount"]
+                "commentCount": statistics["commentCount"],
+                "duration": duration
             }
     else:
         return ({})
@@ -87,20 +108,9 @@ for i in playlist_list:
     j += 1
 
 
-data_file = open('outputfile.csv', 'w', encoding='utf-8')
-csv_writer = csv.writer(data_file)
 
-count = 0
-
-for emp in data:
-    if count == 0:
-        # Writing headers of CSV file
-        header = emp.keys()
-        csv_writer.writerow(header)
-        count += 1
-
-    # Writing data of CSV file
-    csv_writer.writerow(emp.values())
-
-
-data_file.close()
+keys = data[0].keys()
+with open('outputfile.csv', 'w', newline='', encoding='utf-8')  as output_file:
+    dict_writer = csv.DictWriter(output_file, keys, delimiter=';')
+    dict_writer.writeheader()
+    dict_writer.writerows(data)
